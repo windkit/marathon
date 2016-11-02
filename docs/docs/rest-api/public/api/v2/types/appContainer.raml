@@ -37,7 +37,7 @@ types:
       value:
         type: string
         description: value of this parameter
-  DockerPortMapping:
+  ContainerPortMapping:
     type: object
     properties:
       containerPort:
@@ -70,11 +70,10 @@ types:
           This can be used to add metadata to be interpreted by external
           applications such as firewalls.
       name?:
-        type: string
+        type: strings.LegacyName
         description:
           Name of the service hosted on this port.
           If provided, it must be unique over all port mappings.
-        pattern: ^[a-z][-a-z0-9]*$
       protocol?:
         type: strings.NetworkProtocol
         default: tcp
@@ -116,21 +115,18 @@ types:
         description: The name of the docker image to use
       network?:
         type: DockerNetwork
-        description: |
-          The network mode of this container.
-          Please note: this property is supported only with the docker containerizer, not the Mesos containerizer.
+        description: Deprecated in favor of App.networks
       parameters?:
         type: DockerParameter[]
         description: |
           Allowing arbitrary parameters to be passed to docker CLI.
           Note that anything passed to this field is not guaranteed to be
           supported moving forward, as we might move away from the docker CLI.
-          Please note: this property is supported only with the docker containerizer, not the Mesos containerizer.
       portMappings?:
-        type: DockerPortMapping[]
+        type: array
+        items: ContainerPortMapping
         description: |
-          The port mappings of this container.
-          Please note: this property is supported only with the docker containerizer, not the Mesos containerizer.
+          Deprecated in favor of Container.portMappings
       privileged?:
         type: boolean
         description: |
@@ -164,7 +160,10 @@ types:
   Container:
     type: object
     properties:
-      type: EngineType
+      type:
+        type: EngineType
+        default: DOCKER
       docker?: DockerContainer
       appc?: AppCContainer
       volumes?: volumes.AppVolume[]
+      portMappings?: ContainerPortMapping[]

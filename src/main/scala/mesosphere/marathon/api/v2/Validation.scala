@@ -4,8 +4,8 @@ package api.v2
 import java.net._
 
 import com.wix.accord._
+import com.wix.accord.dsl._
 import com.wix.accord.ViolationBuilder._
-import mesosphere.marathon.ValidationFailedException
 import mesosphere.marathon.state.FetchUri
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
@@ -14,7 +14,7 @@ import scala.collection.GenTraversableOnce
 import scala.util.matching.Regex
 
 // TODO(jdef) move this into package "validation"
-object Validation {
+trait Validation {
   def validateOrThrow[T](t: T)(implicit validator: Validator[T]): T = validate(t) match {
     case Success => t
     case f: Failure => throw ValidationFailedException(t, f)
@@ -26,12 +26,19 @@ object Validation {
     }
   }
 
+  /**
+    * when used in a `validator` should be wrapped with `valid(...)`
+    */
   def definedAnd[T](implicit validator: Validator[T]): Validator[Option[T]] = {
     new Validator[Option[T]] {
       override def apply(option: Option[T]): Result = option.map(validator).getOrElse(
         Failure(Set(RuleViolation(None, "not defined", None)))
       )
     }
+  }
+
+  def implied[T](b: => Boolean)(implicit validator: Validator[T]): Validator[T] = new Validator[T] {
+    override def apply(t: T): Result = if (!b) Success else validator(t)
   }
 
   def conditional[T](b: T => Boolean)(implicit validator: Validator[T]): Validator[T] = new Validator[T] {
@@ -42,12 +49,19 @@ object Validation {
     new Validator[Iterable[T]] {
       override def apply(seq: Iterable[T]): Result = {
 
-        val violations = seq.map(item => (item, validator(item))).zipWithIndex.collect {
-          case ((item, f: Failure), pos: Int) => GroupViolation(item, "not valid", Some(s"($pos)"), f.violations)
+        val violations: Set[Violation] = seq match {
+          case m: Map[_, _] =>
+            m.map(item => (item, validator(item))).collect {
+              case ((k, v), f: Failure) => GroupViolation(k, "not valid", Some(s"($k)"), f.violations)
+            }(collection.breakOut)
+          case _ =>
+            seq.map(item => (item, validator(item))).zipWithIndex.collect {
+              case ((item, f: Failure), pos: Int) => GroupViolation(item, "not valid", Some(s"($pos)"), f.violations)
+            }(collection.breakOut)
         }
 
         if (violations.isEmpty) Success
-        else Failure(Set(GroupViolation(seq, "Seq contains elements, which are not valid.", None, violations.toSet)))
+        else Failure(Set(GroupViolation(seq, "contains elements, which are not valid.", None, violations)))
       }
     }
   }
@@ -70,6 +84,9 @@ object Validation {
     }
   }
 
+  def featureEnabledImplies[T](enabledFeatures: Set[String], feature: String)(v: Validator[T]): Validator[T] =
+    implied[T](enabledFeatures.contains(feature))(v)
+
   implicit lazy val failureWrites: Writes[Failure] = Writes { f =>
     Json.obj(
       "message" -> "Object is not valid",
@@ -87,6 +104,7 @@ object Validation {
       })
   }
 
+  // TODO: fix non-tail recursion
   def allRuleViolationsWithFullDescription(
     violation: Violation,
     parentDesc: Option[String] = None,
@@ -124,11 +142,11 @@ object Validation {
           case _ => true
         }
 
-        val desc = parentDesc.map {
-          p => Some(concatPath(p, g.description, prependSlash))
-        } getOrElse {
+        val desc: Option[String] = parentDesc.map { p =>
+          concatPath(p, g.description, prependSlash)
+        }.orElse (
           g.description.map(d => concatPath("", Some(d), prependSlash))
-        }
+        )
         allRuleViolationsWithFullDescription(c, desc, dot)
       }
     }
@@ -147,17 +165,21 @@ object Validation {
     }
   }
 
-  def fetchUriIsValid: Validator[FetchUri] = {
-    new Validator[FetchUri] {
-      def apply(uri: FetchUri) = {
+  def uriIsValid: Validator[String] = {
+    new Validator[String] {
+      def apply(url: String) = {
         try {
-          new URI(uri.uri)
+          new URI(url)
           Success
         } catch {
-          case _: URISyntaxException => Failure(Set(RuleViolation(uri.uri, "URI has invalid syntax.", None)))
+          case _: URISyntaxException => Failure(Set(RuleViolation(url, "URI has invalid syntax.", None)))
         }
       }
     }
+  }
+
+  def fetchUriIsValid: Validator[FetchUri] = validator[FetchUri] { fetch =>
+    fetch.uri is valid(uriIsValid)
   }
 
   def elementsAreUnique[A](errorMessage: String = "Elements must be unique."): Validator[Seq[A]] = {
@@ -169,18 +191,18 @@ object Validation {
   def elementsAreUniqueBy[A, B](
     fn: A => B,
     errorMessage: String = "Elements must be unique.",
-    filter: B => Boolean = { _: B => true }): Validator[Seq[A]] = {
-    new Validator[Seq[A]] {
-      def apply(seq: Seq[A]) = areUnique(seq.map(fn).filter(filter), errorMessage)
+    filter: B => Boolean = { _: B => true }): Validator[Iterable[A]] = {
+    new Validator[Iterable[A]] {
+      def apply(seq: Iterable[A]) = areUnique(seq.map(fn).filter(filter).toVector, errorMessage)
     }
   }
 
   def elementsAreUniqueByOptional[A, B](
     fn: A => GenTraversableOnce[B],
     errorMessage: String = "Elements must be unique.",
-    filter: B => Boolean = { _: B => true }): Validator[Seq[A]] = {
-    new Validator[Seq[A]] {
-      def apply(seq: Seq[A]) = areUnique(seq.flatMap(fn).filter(filter), errorMessage)
+    filter: B => Boolean = { _: B => true }): Validator[Iterable[A]] = {
+    new Validator[Iterable[A]] {
+      def apply(seq: Iterable[A]) = areUnique(seq.flatMap(fn).filter(filter).toVector, errorMessage)
     }
   }
 
@@ -266,4 +288,17 @@ object Validation {
       test = _.matches(regex.regex),
       failure = _ -> failureMessage
     )
+
+  def validateAll[T](x: T, all: Validator[T]*): Result = all.map(v => validate(x)(v)).fold(Success)(_ and _)
+}
+
+object Validation extends Validation {
+
+  import scala.language.implicitConversions
+
+  def forAll[T](all: Validator[T]*): Validator[T] = new Validator[T] {
+    override def apply(x: T): Result = validateAll(x, all: _*)
+  }
+
+  implicit def conditionalTuple[T](t: (T => Boolean, Validator[T])): Validator[T] = conditional(t._1)(t._2)
 }

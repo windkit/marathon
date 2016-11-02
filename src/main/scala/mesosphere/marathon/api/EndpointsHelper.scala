@@ -16,7 +16,7 @@ object EndpointsHelper {
     delimiter: String): String = {
 
     val sb = new StringBuilder
-    for (app <- apps if app.ipAddress.isEmpty) {
+    for (app <- apps) {
       val instances = instancesMap.specInstances(app.id)
       val cleanId = app.id.safePath
 

@@ -1,8 +1,8 @@
 package mesosphere.marathon
 package state
 
-import mesosphere.marathon.api.serialization.LabelsSerializer
 import mesosphere.marathon.stream.Implicits._
+import mesosphere.mesos.protos.LabelHelpers._
 import org.apache.mesos.{ Protos => MesosProtos }
 
 case class DiscoveryInfo(ports: Seq[DiscoveryInfo.Port] = Seq.empty) {
@@ -39,7 +39,7 @@ object DiscoveryInfo {
         .setProtocol(protocol)
 
       if (labels.nonEmpty) {
-        builder.setLabels(LabelsSerializer.toMesosLabelsBuilder(labels))
+        builder.setLabels(labels.toMesosLabels)
       }
 
       builder.build

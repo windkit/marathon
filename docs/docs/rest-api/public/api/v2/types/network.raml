@@ -44,7 +44,7 @@ types:
 
   NetworkMode:
     type: string
-    enum: [container, host]
+    enum: [container, "container/bridge", host]
   Network:
     type: object
     properties:
@@ -68,13 +68,11 @@ types:
     properties:
       number?:
         type: numbers.AnyPort
-        format: int32
         description: The port number
         default: 0
       name:
-        type: string
+        type: strings.LegacyName
         description: Name of the port
-        pattern: ^[a-z][a-z0-9-]*$
       protocol?:
         type: strings.NetworkProtocol
         default: tcp
@@ -108,7 +106,9 @@ types:
           One IP address can belong to zero or more network groups.
           The idea is that containers can only reach containers with which they
           share at least one network group.
+          *Ignored by Marathon*
         items: string
+        uniqueItems: true
       labels?:
         type: label.KVLabels
         (pragma.omitEmpty):
@@ -136,11 +136,10 @@ types:
         type: label.KVLabels
         (pragma.omitEmpty):
       name?:
-        type: string
+        type: strings.LegacyName
         description: |
           Name of the service hosted on this port.
           If provided, it must be unique over all port definitions.
-        pattern: ^[a-z][-a-z0-9]*$
       protocol?:
         type: strings.NetworkProtocol
         default: tcp
