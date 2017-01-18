@@ -3,7 +3,7 @@ from shakedown import *
 from utils import *
 from dcos.errors import DCOSException
 import uuid
-
+import random
 
 def app(id=1, instances=1):
     app_json = {
@@ -183,6 +183,31 @@ def peristent_volume_app():
           }
         }
 
+def pending_deployment_due_to_resource_roles(app_id):
+    resource_role = str(random.getrandbits(32))
+
+    return {
+      "id": app_id,
+      "cpus": 0.001,
+      "instances": 1,
+      "mem": 32,
+      "cmd": "sleep 12345",
+      "acceptedResourceRoles": [
+        resource_role
+      ]
+    }
+
+
+def pending_deployment_due_to_cpu_requirement(app_id):
+    return {
+      "id": app_id,
+      "instances": 1,
+      "mem": 128,
+      "cpus": 65536,
+      "cmd": "sleep 12345"
+    }
+
+
 def pin_to_host(app_def, host):
     app_def['constraints'] = constraints('hostname', 'LIKE', host)
 
@@ -225,6 +250,12 @@ def delete_all_apps():
         else:
             client.remove_app(app['id'], True)
 
+
+def stop_all_deployments():
+    client = marathon.create_client()
+    deployments = client.get_deployments()
+    for deployment in deployments:
+        client.stop_deployment(deployment['id'])
 
 def delete_all_apps_wait():
     delete_all_apps()
