@@ -233,7 +233,7 @@ class DeploymentManagerTest extends AkkaUnitTest with ImplicitSender with GroupC
     implicit val metrics: Metrics = new Metrics(new MetricRegistry)
     implicit val ctx: ExecutionContext = ExecutionContext.global
     val taskTracker: InstanceTracker = MarathonTestHelper.createTaskTracker(
-      AlwaysElectedLeadershipModule.forActorSystem(system)
+      AlwaysElectedLeadershipModule.forRefFactory(system)
     )
     val taskKillService: KillService = mock[KillService]
     val scheduler: SchedulerActions = mock[SchedulerActions]

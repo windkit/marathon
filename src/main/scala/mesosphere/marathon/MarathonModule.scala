@@ -46,7 +46,7 @@ object ModuleNames {
   final val MESOS_HEARTBEAT_ACTOR = "MesosHeartbeatActor"
 }
 
-class MarathonModule(conf: MarathonConf, http: HttpConf)
+class MarathonModule(conf: MarathonConf, http: HttpConf, actorSystem: ActorSystem)
     extends AbstractModule {
 
   val log = LoggerFactory.getLogger(getClass.getName)
@@ -171,7 +171,7 @@ class MarathonModule(conf: MarathonConf, http: HttpConf)
 
   @Provides
   @Singleton
-  def provideActorSystem(): ActorSystem = ActorSystem("marathon")
+  def provideActorSystem(): ActorSystem = actorSystem
 
   /* Reexports the `akka.actor.ActorSystem` as `akka.actor.ActorRefFactory`. It doesn't work automatically. */
   @Provides

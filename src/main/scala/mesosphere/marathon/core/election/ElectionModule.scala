@@ -4,7 +4,7 @@ package core.election
 import akka.actor.ActorSystem
 import akka.event.EventStream
 import com.codahale.metrics.MetricRegistry
-import mesosphere.marathon.core.base.ShutdownHooks
+import mesosphere.marathon.core.base.ShutdownState
 import mesosphere.marathon.core.election.impl.{ CuratorElectionService, ExponentialBackoff, PseudoElectionService }
 import mesosphere.marathon.metrics.Metrics
 
@@ -14,7 +14,7 @@ class ElectionModule(
     eventStream: EventStream,
     metrics: Metrics = new Metrics(new MetricRegistry),
     hostPort: String,
-    shutdownHooks: ShutdownHooks) {
+    shutdownState: ShutdownState) {
 
   private lazy val backoff = new ExponentialBackoff(name = "offerLeadership")
   lazy val service: ElectionService = if (config.highlyAvailable()) {
@@ -27,7 +27,7 @@ class ElectionModule(
           metrics,
           hostPort,
           backoff,
-          shutdownHooks
+          shutdownState
         )
       case backend: Option[String] =>
         throw new IllegalArgumentException(s"Leader election backend $backend not known!")
@@ -39,7 +39,7 @@ class ElectionModule(
       metrics,
       hostPort,
       backoff,
-      shutdownHooks
+      shutdownState
     )
   }
 }

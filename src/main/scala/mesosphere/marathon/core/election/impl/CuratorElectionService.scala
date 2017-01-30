@@ -34,9 +34,10 @@ class CuratorElectionService(
   metrics: Metrics = new Metrics(new MetricRegistry),
   hostPort: String,
   backoff: ExponentialBackoff,
-  shutdownHooks: ShutdownHooks) extends ElectionServiceBase(
-  system, eventStream, metrics, backoff, shutdownHooks
+  shutdownState: ShutdownState) extends ElectionServiceBase(
+  system, eventStream, metrics, backoff, shutdownState
 ) with StrictLogging {
+
   private val callbackExecutor = Executors.newSingleThreadExecutor()
   /* We re-use the single thread executor here because code locks (via synchronized) frequently */
   override protected implicit val executionContext: ExecutionContext = ExecutionContext.fromExecutor(callbackExecutor)

@@ -7,6 +7,7 @@ import java.util.Collections
 import akka.actor.{ ActorSystem, Scheduler }
 import akka.stream.Materializer
 import com.typesafe.config.Config
+import mesosphere.marathon.core.base.ShutdownState
 import mesosphere.marathon.core.storage.store.PersistenceStore
 import mesosphere.marathon.core.storage.store.impl.BasePersistenceStore
 import mesosphere.marathon.core.storage.store.impl.cache.{ LazyCachingPersistenceStore, LazyVersionCachingPersistentStore, LoadTimeCachingPersistenceStore }
@@ -21,7 +22,7 @@ import org.apache.zookeeper.ZooDefs
 import org.apache.zookeeper.data.ACL
 
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.{ Duration, _ }
+import scala.concurrent.duration._
 
 sealed trait StorageConfig extends Product with Serializable
 
@@ -100,7 +101,8 @@ case class CuratorZk(
     maxOutstanding: Int,
     maxVersions: Int,
     versionCacheConfig: Option[VersionCacheConfig],
-    availableFeatures: Set[String]
+    availableFeatures: Set[String],
+    shutdownState: ShutdownState
 ) extends PersistenceStorageConfig[ZkId, String, ZkSerialized] {
 
   lazy val client: RichCuratorFramework = {
@@ -121,10 +123,10 @@ case class CuratorZk(
     })
     builder.retryPolicy(NoRetryPolicy) // We use our own Retry.
     builder.namespace(zkPath.stripPrefix("/"))
-    val client = builder.build()
+    val client = RichCuratorFramework(builder.build())
     client.start()
-    client.blockUntilConnected()
-    RichCuratorFramework(client)
+    client.blockUntilConnected(shutdownState)
+    (client)
   }
 
   protected def leafStore(implicit metrics: Metrics, mat: Materializer, ctx: ExecutionContext,
@@ -140,7 +142,7 @@ case class CuratorZk(
 
 object CuratorZk {
   val StoreName = "zk"
-  def apply(conf: StorageConf): CuratorZk =
+  def apply(conf: StorageConf, shutdownState: ShutdownState): CuratorZk =
     CuratorZk(
       cacheType = if (conf.storeCache()) LazyCaching else NoCaching,
       sessionTimeout = Some(conf.zkSessionTimeoutDuration),
@@ -157,10 +159,11 @@ object CuratorZk {
       maxOutstanding = 1024,
       maxVersions = conf.maxVersions(),
       versionCacheConfig = if (conf.versionCacheEnabled()) StorageConfig.DefaultVersionCacheConfig else None,
-      availableFeatures = conf.availableFeatures
+      availableFeatures = conf.availableFeatures,
+      shutdownState = shutdownState
     )
 
-  def apply(config: Config): CuratorZk = {
+  def apply(config: Config, shutdownState: ShutdownState): CuratorZk = {
     val username = config.optionalString("username")
     val password = config.optionalString("password")
     val acls = (username, password) match {
@@ -184,7 +187,8 @@ object CuratorZk {
       maxVersions = config.int("max-versions", StorageConfig.DefaultMaxVersions),
       versionCacheConfig =
         if (config.bool("version-cache-enabled", true)) StorageConfig.DefaultVersionCacheConfig else None,
-      availableFeatures = config.stringList("available-features", Seq.empty).to[Set]
+      availableFeatures = config.stringList("available-features", Seq.empty).to[Set],
+      shutdownState = shutdownState
     )
   }
 }
@@ -217,17 +221,17 @@ object StorageConfig {
 
   val DefaultLegacyMaxVersions = 25
   val DefaultMaxVersions = 5000
-  def apply(conf: StorageConf): StorageConfig = {
+  def apply(conf: StorageConf, shutdownState: ShutdownState): StorageConfig = {
     conf.internalStoreBackend() match {
       case InMem.StoreName => InMem(conf)
-      case CuratorZk.StoreName => CuratorZk(conf)
+      case CuratorZk.StoreName => CuratorZk(conf, shutdownState)
     }
   }
 
-  def apply(conf: Config): StorageConfig = {
+  def apply(conf: Config, shutdownState: ShutdownState): StorageConfig = {
     conf.string("storage-type", "zk") match {
       case InMem.StoreName => InMem(conf)
-      case CuratorZk.StoreName => CuratorZk(conf)
+      case CuratorZk.StoreName => CuratorZk(conf, shutdownState)
     }
   }
 }

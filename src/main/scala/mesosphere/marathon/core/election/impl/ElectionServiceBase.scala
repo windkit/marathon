@@ -1,11 +1,12 @@
-package mesosphere.marathon.core.election.impl
+package mesosphere.marathon
+package core.election.impl
 
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.event.EventStream
 import akka.pattern.after
 import com.codahale.metrics.{ Gauge, MetricRegistry }
 import mesosphere.marathon.core.base._
-import mesosphere.marathon.core.base.ShutdownHooks
+import mesosphere.marathon.core.base.ShutdownState
 import mesosphere.marathon.core.election.{ ElectionCandidate, ElectionService, LocalLeadershipEvent }
 import mesosphere.marathon.metrics.Metrics.Timer
 import mesosphere.marathon.metrics.{ MetricPrefixes, Metrics }
@@ -42,7 +43,7 @@ abstract class ElectionServiceBase(
     eventStream: EventStream,
     metrics: Metrics = new Metrics(new MetricRegistry),
     backoff: Backoff,
-    shutdownHooks: ShutdownHooks) extends ElectionService {
+    shutdownState: ShutdownState) extends ElectionService {
   import ElectionServiceBase._
 
   private lazy val log = LoggerFactory.getLogger(getClass.getName)
@@ -121,8 +122,8 @@ abstract class ElectionServiceBase(
   }
 
   final override def offerLeadership(candidate: ElectionCandidate): Unit = synchronized {
-    if (shutdownHooks.isShuttingDown) {
-      log.info("Ignoring leadership offer while shutting down")
+    if (shutdownState.isShuttingDown) {
+      log.info("Not offering leadership: Process is shutting down.")
     } else {
       setOfferState(
         offeringCase = {

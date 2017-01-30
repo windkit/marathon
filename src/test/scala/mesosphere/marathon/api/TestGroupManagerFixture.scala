@@ -36,7 +36,7 @@ class TestGroupManagerFixture extends Mockito with AkkaTest {
 
   private[this] val groupManagerModule = new GroupManagerModule(
     config = config,
-    AlwaysElectedLeadershipModule.forActorSystem(system),
+    AlwaysElectedLeadershipModule.forRefFactory(system),
     serializeUpdates = WorkQueue("serializeGroupUpdates", 1, 10),
     scheduler = schedulerProvider,
     groupRepo = groupRepository,

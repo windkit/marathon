@@ -7,7 +7,7 @@ import akka.event.EventStream
 import com.codahale.metrics.MetricRegistry
 import mesosphere.AkkaUnitTest
 import mesosphere.chaos.http.HttpConf
-import mesosphere.marathon.core.base.ShutdownHooks
+import mesosphere.marathon.core.base.ShutdownState
 import mesosphere.marathon.core.election.{ ElectionCandidate, ElectionService, LocalLeadershipEvent }
 import mesosphere.marathon.metrics.Metrics
 import org.mockito.Mockito
@@ -27,14 +27,13 @@ class ElectionServiceBaseTest extends AkkaUnitTest {
     val candidate: ElectionCandidate = mock[ElectionCandidate]
     val metrics: Metrics = new Metrics(new MetricRegistry)
     val backoff: Backoff = new ExponentialBackoff(0.01.seconds, 0.1.seconds)
-    val shutdownHooks: ShutdownHooks = mock[ShutdownHooks]
   }
 
   "ElectionServiceBase" should {
     "state is Idle initially" in {
       val f = new Fixture
       val electionService = new ElectionServiceBase(
-        system, f.events, f.metrics, f.backoff, f.shutdownHooks
+        system, f.events, f.metrics, f.backoff, ShutdownState.Ignore
       ) {
         override protected def offerLeadershipImpl(): Unit = ???
         override def leaderHostPortImpl: Option[String] = ???
@@ -46,7 +45,7 @@ class ElectionServiceBaseTest extends AkkaUnitTest {
     "state is eventually Offered after offerLeadership" in {
       val f = new Fixture
       val electionService = new ElectionServiceBase(
-        system, f.events, f.metrics, f.backoff, f.shutdownHooks
+        system, f.events, f.metrics, f.backoff, ShutdownState.Ignore
       ) {
         override protected def offerLeadershipImpl(): Unit = ()
         override def leaderHostPortImpl: Option[String] = ???
@@ -67,7 +66,7 @@ class ElectionServiceBaseTest extends AkkaUnitTest {
       val f = new Fixture
       val electionService = new ElectionServiceBase(
         system, f.events, f.metrics,
-        new ExponentialBackoff(initialValue = 5.seconds), f.shutdownHooks
+        new ExponentialBackoff(initialValue = 5.seconds), ShutdownState.Ignore
       ) {
         override protected def offerLeadershipImpl(): Unit = ()
         override def leaderHostPortImpl: Option[String] = ???
@@ -82,7 +81,7 @@ class ElectionServiceBaseTest extends AkkaUnitTest {
     "state is Abdicating after abdicateLeadership" in {
       val f = new Fixture
       val electionService = new ElectionServiceBase(
-        system, f.events, f.metrics, f.backoff, f.shutdownHooks
+        system, f.events, f.metrics, f.backoff, ShutdownState.Ignore
       ) {
         override protected def offerLeadershipImpl(): Unit = ()
         override def leaderHostPortImpl: Option[String] = ???
@@ -119,7 +118,7 @@ class ElectionServiceBaseTest extends AkkaUnitTest {
     "offerLeadership while abdicating" in {
       val f = new Fixture
       val electionService = new ElectionServiceBase(
-        system, f.events, f.metrics, f.backoff, f.shutdownHooks
+        system, f.events, f.metrics, f.backoff, ShutdownState.Ignore
       ) {
         override protected def offerLeadershipImpl(): Unit = ()
         override def leaderHostPortImpl: Option[String] = ???
@@ -139,7 +138,7 @@ class ElectionServiceBaseTest extends AkkaUnitTest {
       val events = mock[EventStream]
 
       val electionService = new ElectionServiceBase(
-        system, events, f.metrics, f.backoff, f.shutdownHooks
+        system, events, f.metrics, f.backoff, ShutdownState.Ignore
       ) {
         override protected def offerLeadershipImpl(): Unit = {
           startLeadership(_ => stopLeadership())
@@ -168,7 +167,7 @@ class ElectionServiceBaseTest extends AkkaUnitTest {
     "leadership can be re-offered" in {
       val f = new Fixture
       val electionService = new ElectionServiceBase(
-        system, f.events, f.metrics, f.backoff, f.shutdownHooks
+        system, f.events, f.metrics, f.backoff, ShutdownState.Ignore
       ) {
         override protected def offerLeadershipImpl(): Unit = () // do not call startLeadership here
         override def leaderHostPortImpl: Option[String] = ???
@@ -189,7 +188,7 @@ class ElectionServiceBaseTest extends AkkaUnitTest {
       val throwException = new AtomicBoolean(true)
 
       val electionService = new ElectionServiceBase(
-        system, f.events, f.metrics, backoff, f.shutdownHooks
+        system, f.events, f.metrics, backoff, ShutdownState.Ignore
       ) {
         override protected def offerLeadershipImpl(): Unit = {
           startLeadership(_ => stopLeadership())
@@ -222,7 +221,7 @@ class ElectionServiceBaseTest extends AkkaUnitTest {
       Given("an ElactionServiceBase descendent throws an exception in leaderHostPortImpl")
       val f = new Fixture
       val electionService = new ElectionServiceBase(
-        system, f.events, f.metrics, f.backoff, f.shutdownHooks
+        system, f.events, f.metrics, f.backoff, ShutdownState.Ignore
       ) {
         override protected def offerLeadershipImpl(): Unit = {
           startLeadership(_ => stopLeadership())

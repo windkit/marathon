@@ -3,6 +3,7 @@ package storage
 
 import akka.actor.{ ActorSystem, Scheduler }
 import akka.stream.Materializer
+import mesosphere.marathon.core.base.ShutdownState
 import mesosphere.marathon.core.storage.store.impl.cache.LoadTimeCachingPersistenceStore
 import mesosphere.marathon.metrics.Metrics
 import mesosphere.marathon.storage.migration.Migration
@@ -30,9 +31,9 @@ trait StorageModule {
 }
 
 object StorageModule {
-  def apply(conf: StorageConf)(implicit metrics: Metrics, mat: Materializer, ctx: ExecutionContext,
-    scheduler: Scheduler, actorSystem: ActorSystem): StorageModule = {
-    val currentConfig = StorageConfig(conf)
+  def apply(conf: StorageConf, shutdownState: ShutdownState)(implicit metrics: Metrics, mat: Materializer,
+    ctx: ExecutionContext, scheduler: Scheduler, actorSystem: ActorSystem): StorageModule = {
+    val currentConfig = StorageConfig(conf, shutdownState)
     apply(currentConfig)
   }
 
