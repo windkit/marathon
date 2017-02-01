@@ -5,6 +5,7 @@ import mesosphere.marathon.core.pod.{HostNetwork, MesosContainer, PodDefinition}
 import mesosphere.marathon.integration.setup.{EmbeddedMarathonTest, MesosConfig}
 import mesosphere.marathon.state.PathId
 import mesosphere.{AkkaIntegrationTest, WhenEnvSet}
+import mesosphere.marathon.raml.PodInstanceState
 
 import scala.collection.immutable.Seq
 
