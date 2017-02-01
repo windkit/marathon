@@ -1,16 +1,12 @@
 package mesosphere.marathon
 package integration
 
-import mesosphere.marathon.core.health.{ MesosHttpHealthCheck, PortReference }
-import mesosphere.marathon.core.pod.{ HostNetwork, HostVolume, MesosContainer, PodDefinition }
-import mesosphere.marathon.integration.facades.MarathonFacade._
-import mesosphere.marathon.integration.setup.{ EmbeddedMarathonTest, MesosConfig, WaitTestSupport }
-import mesosphere.marathon.raml.PodInstanceState
-import mesosphere.marathon.state.{ AppDefinition, Container, PathId }
-import mesosphere.{ AkkaIntegrationTest, WhenEnvSet }
+import mesosphere.marathon.core.pod.{HostNetwork, MesosContainer, PodDefinition}
+import mesosphere.marathon.integration.setup.{EmbeddedMarathonTest, MesosConfig}
+import mesosphere.marathon.state.PathId
+import mesosphere.{AkkaIntegrationTest, WhenEnvSet}
 
 import scala.collection.immutable.Seq
-import scala.concurrent.duration._
 
 @IntegrationTest
 class MesosAppIntegrationTest extends AkkaIntegrationTest with EmbeddedMarathonTest {
