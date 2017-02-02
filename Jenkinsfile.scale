@@ -1,6 +1,10 @@
 #!/usr/bin/env groovy
 
 node {
-  stage "Create CCM cluster"
+  stage "Create CCM Cluster"
   echo "Hello World"
+
+  stage "Run Scale Tests"
+
+  stage "Archive Results"
 }
