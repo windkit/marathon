@@ -10,7 +10,7 @@ node {
      ])
   ])
 
-  stage("Create CCM Cluster") {
+  stage("Connect to CCM Cluster") {
    println params.marathonUrl
   }
 
