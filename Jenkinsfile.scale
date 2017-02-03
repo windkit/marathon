@@ -10,10 +10,11 @@ node {
      ])
   ])
 
-  stage "Create CCM Cluster"
-  println params.marathonUrl
+  stage("Create CCM Cluster") {
+   println params.marathonUrl
+  }
 
-  stage "Run Scale Tests"
+  stage("Run Scale Tests"){}
 
-  stage "Archive Results"
+  stage("Archive Results"){}
 }
