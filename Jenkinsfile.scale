@@ -2,6 +2,7 @@
 
 node {
   stage "Create CCM Cluster"
+  println marathon-url
   echo "Hello World"
 
   stage "Run Scale Tests"
