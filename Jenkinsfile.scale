@@ -1,9 +1,17 @@
 #!/usr/bin/env groovy
 
 node {
+  properties([
+     parameters([
+       stringParam(
+         description: 'Sets Marathn endpoint.',
+         name: 'marathonUrl'
+       )
+     ])
+  ])
+
   stage "Create CCM Cluster"
-  println params.marathonURL
-  echo "Hello World"
+  println params.marathonUrl
 
   stage "Run Scale Tests"
 
