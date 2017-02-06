@@ -54,7 +54,7 @@ node('shakedown') {
           }
         }
         withEnv(["MOM1=${marathon1}", "MOM2=${marathon2}"]) {
-          sh "shakedown --stdout all --stdout-inline --timeout ${timeout} --ssh-key-file $CLI_TEST_SSH_KEY --dcos-url $params.dcos_url tests/scale/test_mom_marathon_scale.py::test_mom1_apps_instances_1_1"
+          sh "shakedown --stdout all --stdout-inline --timeout ${timeout} --ssh-key-file $CLI_TEST_SSH_KEY --dcos-url $params.dcos_url tests/scale/test_mom_marathon_scale.py"
         }
       }
   }
