@@ -164,7 +164,6 @@ def launch_apps2(test_obj):
     client = marathon.create_client()
     count = test_obj.count
     instances = test_obj.instance
-
     for num in range(1, count + 1):
         # after 400 and every 50 check to see if we need to wait
         if num > 400 and num % 50 == 0:
@@ -202,7 +201,7 @@ def scale_test_app(test_obj):
     test_obj.add_event('undeploying {} tasks'.format(current_tasks))
 
     # delete apps
-    delete_all_apps_wait2(test_obj)
+    # delete_all_apps_wait2(test_obj)
 
     assert launch_complete
 
@@ -258,10 +257,11 @@ def delete_all_apps_wait2(test_obj=None, msg='undeployment failure'):
     # however it is a marathon internal issue on getting a timely response
     # all tested situations the remove did succeed
     try:
-        wait_for_service_endpoint('marathon-user')
         undeployment_wait(test_obj)
     except Exception as e:
-        test_obj.add_event(msg)
+        msg = str(e)
+        if test_obj is not None:
+            test_obj.add_event(msg)
         assert False, msg
 
 
@@ -287,7 +287,11 @@ def undeployment_wait(test_obj=None):
                 raise TestException()
 
             time.sleep(3)
-            wait_for_service_endpoint('marathon-user')
+            if test_obj is None or 'root' in test_obj.mom:
+                # todo: need root mom end point
+                time.sleep(1)
+            else:
+                wait_for_service_endpoint('marathon-user')
             pass
 
     if test_obj is not None:
@@ -318,7 +322,11 @@ def time_deployment2(test_obj, starting_tasks):
                 test_obj.failed('Too many failures query for deployments')
                 raise TestException()
 
-            wait_for_service_endpoint('marathon-user')
+            if 'root' in test_obj.mom:
+                # todo: need root mom end point
+                time.sleep(1)
+            else:
+                wait_for_service_endpoint('marathon-user')
             pass
 
     test_obj.successful()
@@ -380,6 +388,7 @@ def write_meta_data(test_metadata={}, filename='meta-data.json'):
     metadata.update(test_metadata)
     with open(filename, 'w') as out:
         json.dump(metadata, out)
+
 
 def cluster_info(mom_name='marathon-user'):
     agents = get_private_agents()
