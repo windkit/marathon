@@ -143,11 +143,13 @@ def count_test_app(test_obj):
     except:
         test_obj.add_event('Failure to fully launch')
         launch_complete = False
+        wait_for_service_endpoint('marathon-user')
         pass
 
     # time to finish launch
     try:
         time_deployment2(test_obj, starting_tasks)
+        launch_complete = True
     except Exception as e:
         assert False
 
@@ -173,7 +175,13 @@ def launch_apps2(test_obj):
                 # wait for deployment count to be less than a sec
                 wait_for(deployment_less_than_predicate)
                 time.sleep(1)
-        client.add_app(app(num, instances))
+        try:
+            client.add_app(app(num, instances))
+        except Exception as e:
+            time.sleep(1)
+            test_obj.add_event('launch exception: {}'.format(str(e)))
+            # either service not available or timeout of 10s
+            wait_for_service_endpoint('marathon-user')
 
 
 def scale_test_app(test_obj):
@@ -190,11 +198,13 @@ def scale_test_app(test_obj):
     except:
         test_obj.failed('Failure to launched (but we still will wait for deploys)')
         launch_complete = False
+        wait_for_service_endpoint('marathon-user')
         pass
 
     # time launch
     try:
         time_deployment2(test_obj, starting_tasks)
+        launch_complete = True
     except Exception as e:
         assert False
 
