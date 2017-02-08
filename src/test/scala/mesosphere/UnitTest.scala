@@ -88,3 +88,12 @@ abstract class IntegrationTest extends WordSpec with IntegrationTestLike
 trait AkkaIntegrationTestLike extends AkkaUnitTestLike with IntegrationTestLike
 
 abstract class AkkaIntegrationTest extends IntegrationTest with AkkaIntegrationTestLike
+
+/**
+  * Mixing in this trait will result in retrying a failed test again.
+  * If the second run succeeds, the result will be Canceled.
+  */
+trait RetryOnFailed extends TestSuite with Retries {
+  override def withFixture(test: NoArgTest): Outcome = withRetryOnFailure { super.withFixture(test) }
+}
+

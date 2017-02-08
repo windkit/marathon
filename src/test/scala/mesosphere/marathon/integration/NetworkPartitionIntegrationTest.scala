@@ -1,11 +1,11 @@
 package mesosphere.marathon
 package integration
 
-import mesosphere.AkkaIntegrationTest
+import mesosphere.{AkkaIntegrationTest, RetryOnFailed}
 import mesosphere.marathon.integration.facades.ITEnrichedTask
 import mesosphere.marathon.integration.setup._
 import org.scalatest.concurrent.Eventually
-import org.scalatest.time.{ Second, Seconds, Span }
+import org.scalatest.time.{Second, Seconds, Span}
 
 /**
   * Integration test to simulate the issues discovered a verizon where a network partition caused Marathon to be
@@ -17,7 +17,7 @@ import org.scalatest.time.{ Second, Seconds, Span }
   * are simulated with a disconnection from the processes.
   */
 @IntegrationTest
-class NetworkPartitionIntegrationTest extends AkkaIntegrationTest with EmbeddedMarathonTest with Eventually {
+class NetworkPartitionIntegrationTest extends AkkaIntegrationTest with EmbeddedMarathonTest with Eventually with RetryOnFailed {
 
   override implicit def patienceConfig = PatienceConfig(timeout = Span(50, Seconds), interval = Span(1, Second))
 
