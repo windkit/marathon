@@ -410,8 +410,10 @@ def elapse_time(start, end=None):
 def write_meta_data(test_metadata={}, filename='meta-data.json'):
     agents = get_private_agents()
     resources = available_resources()
+    marathon_version = get_marathon_version()
     metadata = {
         'dcos-version': dcos_version(),
+        'marathon-version': marathon_version,
         'private-agents': len(agents),
         'resources': {
             'cpus': resources.cpus,
@@ -423,6 +425,12 @@ def write_meta_data(test_metadata={}, filename='meta-data.json'):
     with open(filename, 'w') as out:
         json.dump(metadata, out)
 
+
+def get_marathon_version():
+    client = marathon.create_client()
+    about = client.get_about()
+    return about.get("version")
+    
 
 def cluster_info(mom_name='marathon-user'):
     agents = get_private_agents()
