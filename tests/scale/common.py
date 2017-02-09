@@ -122,11 +122,17 @@ def scale_test_apps(test_obj):
 
 
 def get_current_tasks():
-    return len(get_tasks())
+    task_count = 0
+    try:
+        task_count = len(get_tasks())
+    except:
+        pass
+
+    return task_count
 
 
 def get_current_app_tasks(starting_tasks):
-    return len(get_tasks()) - starting_tasks
+    return get_current_tasks() - starting_tasks
 
 
 def count_test_app(test_obj):
