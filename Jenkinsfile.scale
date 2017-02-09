@@ -31,7 +31,7 @@ node('shakedown') {
         variable: 'CLI_TEST_SSH_KEY']
       ]) {
 
-        sh "ln -sf $DOT_SHAKEDOWN ~/.shakedown"
+        sh "ln -sfn $DOT_SHAKEDOWN ~/.shakedown"
 
         sh "shakedown --stdout all --stdout-inline --timeout ${timeout} --ssh-key-file $CLI_TEST_SSH_KEY --dcos-url $params.dcos_url tests/scale/test_root_marathon_scale.py"
       }
