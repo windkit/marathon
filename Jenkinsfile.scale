@@ -2,6 +2,7 @@
 
 node('shakedown') {
   wrap([$class: 'MesosSingleUseSlave']) {
+  wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'XTerm']) {
     def timeout=360000
 
     properties([
@@ -34,12 +35,13 @@ node('shakedown') {
 
           sh "cp -f \"${DOT_SHAKEDOWN}\" ~/.shakedown"
 
-          sh "shakedown --stdout all --stdout-inline --timeout ${timeout} --ssh-key-file \"${CLI_TEST_SSH_KEY}\" --dcos-url $params.dcos_url tests/scale/test_root_marathon_scale.py"
+          sh "TERM=velocity shakedown --stdout all --stdout-inline --timeout ${timeout} --ssh-key-file \"${CLI_TEST_SSH_KEY}\" --dcos-url $params.dcos_url tests/scale/test_root_marathon_scale.py"
         }
     }
 
     stage('Archive Results'){
       archiveArtifacts 'scale-test.csv, *.json'
     }
+  }
   }
 }
