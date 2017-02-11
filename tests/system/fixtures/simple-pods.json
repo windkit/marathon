@@ -2,6 +2,7 @@
   "id": "/simple-pods",
   "scaling": { "kind": "fixed", "instances": 1 },
   "environment": { "PING": "PONG" },
+  "scheduling": {"placement": {"constraints": [], "acceptedResourceRoles": []}},
   "containers": [
     {
       "name": "ct1",
