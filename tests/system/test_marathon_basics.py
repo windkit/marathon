@@ -243,12 +243,13 @@ def test_bad_user():
     with marathon_on_marathon():
         client = marathon.create_client()
         client.add_app(app_def)
-        time.sleep(2)
 
-        appl = client.get_app(app_id)
-        message = appl['lastTaskFailure']['message']
-        error = "Failed to get user information for 'bad'"
-        assert error in message
+        @retrying.retry(wait_fixed=1000, stop_max_delay=10000)
+        def check_failure_message():
+            appl = client.get_app(app_id)
+            message = appl['lastTaskFailure']['message']
+            error = "Failed to get user information for 'bad'"
+            assert error in message
 
 
 def test_bad_uri():
