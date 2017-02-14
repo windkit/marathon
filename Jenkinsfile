@@ -89,15 +89,20 @@ node('JenkinsMarathonCI-Debian8') {
             junit allowEmptyResults: true, testResults: 'target/test-reports/integration/**/*.xml'
           }
         }
-        stage("Parent Stage") {
-        parallel (
-          "4. Assemble Runnable Binaries": {
-            echo "Skip"
-            //sh "sudo -E sbt assembly"
-            //sh "sudo bin/build-distribution"
-          },
-          "5. Build Docker Image": {
-            echo "Skip"
+        stage("4. Assemble Runnable Binaries") {
+          echo "Skip"
+          //sh "sudo -E sbt assembly"
+          //sh "sudo bin/build-distribution"
+        }
+        stage("5. Package Binaries") {
+          parallel (
+            "Tar Binaries": {
+              echo "Skip"
+              sh """tar --version
+              """
+            },
+            "Build Docker Image": {
+              echo "Skip"
             // target is in .dockerignore so we just copy the jar before.
            // sh "cp target/*/marathon-assembly-*.jar ."
            // mesosVersion = sh(returnStdout: true, script: "sed -n 's/^.*MesosDebian = \"\\(.*\\)\"/\\1/p' <./project/Dependencies.scala").trim()
@@ -106,12 +111,12 @@ node('JenkinsMarathonCI-Debian8') {
            //         --build-arg MESOS_VERSION=${mesosVersion} \
            //         \$(pwd)
            //    """
-          },
-          "6. Archive Binaries": {
-            archiveArtifacts artifacts: 'target/**/classes/**', allowEmptyArchive: true
-            archiveArtifacts artifacts: 'target/marathon-runnable.jar', allowEmptyArchive: true
-          }
+            },
         )
+      }
+      stage("6. Archive Artifacts") {
+          archiveArtifacts artifacts: 'target/**/classes/**', allowEmptyArchive: true
+          archiveArtifacts artifacts: 'target/marathon-runnable.jar', allowEmptyArchive: true
       }
     } catch (Exception err) {
         currentBuild.result = 'FAILURE'
