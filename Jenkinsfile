@@ -57,8 +57,7 @@ node('JenkinsMarathonCI-Debian8') {
         stageWithCommitStatus("1. Compile") {
           try {
             withEnv(['RUN_DOCKER_INTEGRATION_TESTS=true', 'RUN_MESOS_INTEGRATION_TESTS=true']) {
-              echo "Skip"
-              //sh "sudo -E sbt -Dsbt.log.format=false clean compile scapegoat doc"
+              sh "sudo -E sbt -Dsbt.log.format=false clean compile scapegoat doc"
             }
           } finally {
             archiveArtifacts artifacts: 'target/**/scapegoat-report/scapegoat.html', allowEmptyArchive: true
@@ -68,8 +67,7 @@ node('JenkinsMarathonCI-Debian8') {
           try {
               timeout(time: 20, unit: 'MINUTES') {
                 withEnv(['RUN_DOCKER_INTEGRATION_TESTS=true', 'RUN_MESOS_INTEGRATION_TESTS=true']) {
-                   echo "Skip"
-                   //sh "sudo -E sbt -Dsbt.log.format=false coverage test coverageReport"
+                   sh "sudo -E sbt -Dsbt.log.format=false coverage test coverageReport"
                 }
               }
           } finally {
@@ -81,8 +79,7 @@ node('JenkinsMarathonCI-Debian8') {
           try {
               timeout(time: 20, unit: 'MINUTES') {
                 withEnv(['RUN_DOCKER_INTEGRATION_TESTS=true', 'RUN_MESOS_INTEGRATION_TESTS=true']) {
-                   echo "Skip"
-                   //sh "sudo -E sbt -Dsbt.log.format=false coverage integration:test mesos-simulation/integration:test coverageReport"
+                   sh "sudo -E sbt -Dsbt.log.format=false coverage integration:test mesos-simulation/integration:test coverageReport"
                 }
             }
           } finally {
@@ -90,28 +87,34 @@ node('JenkinsMarathonCI-Debian8') {
           }
         }
         stage("4. Assemble Runnable Binaries") {
-          echo "Skip"
-          //sh "sudo -E sbt assembly"
-          //sh "sudo bin/build-distribution"
+          sh "sudo -E sbt assembly"
+          sh "sudo bin/build-distribution"
         }
         stage("5. Package Binaries") {
           parallel (
             "Tar Binaries": {
               echo "Skip"
-              sh """tar --version
-              """
+              sh """tar -czv -f "target/ARTIFACT-todo.tgz" \
+                      --transform "s,,marathon-SBT_PROJECT_VERSION/," \
+                      Dockerfile \
+                      README.md \
+                      LICENSE \
+                      bin \
+                      examples \
+                      docs \
+                      target/scala-2.*/marathon-assembly-*.jar
+                 """
             },
             "Build Docker Image": {
-              echo "Skip"
-            // target is in .dockerignore so we just copy the jar before.
-           // sh "cp target/*/marathon-assembly-*.jar ."
-           // mesosVersion = sh(returnStdout: true, script: "sed -n 's/^.*MesosDebian = \"\\(.*\\)\"/\\1/p' <./project/Dependencies.scala").trim()
-           // sh """sudo docker build \
-           //         -t mesosphere/marathon:${gitCommit} \
-           //         --build-arg MESOS_VERSION=${mesosVersion} \
-           //         \$(pwd)
-           //    """
-            },
+              //target is in .dockerignore so we just copy the jar before.
+              sh "cp target/*/marathon-assembly-*.jar ."
+              mesosVersion = sh(returnStdout: true, script: "sed -n 's/^.*MesosDebian = \"\\(.*\\)\"/\\1/p' <./project/Dependencies.scala").trim()
+              sh """sudo docker build \
+                      -t mesosphere/marathon:${gitCommit} \
+                      --build-arg MESOS_VERSION=${mesosVersion} \
+                      \$(pwd)
+                 """
+              },
         )
       }
       stage("6. Archive Artifacts") {
