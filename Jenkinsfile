@@ -90,7 +90,7 @@ node('JenkinsMarathonCI-Debian8') {
           }
         }
         stage("Parent Stage") {
-        parallel {
+        parallel (
           "4. Assemble Runnable Binaries": {
             echo "Skip"
             //sh "sudo -E sbt assembly"
@@ -111,7 +111,7 @@ node('JenkinsMarathonCI-Debian8') {
             archiveArtifacts artifacts: 'target/**/classes/**', allowEmptyArchive: true
             archiveArtifacts artifacts: 'target/marathon-runnable.jar', allowEmptyArchive: true
           }
-        }
+        )
       }
     } catch (Exception err) {
         currentBuild.result = 'FAILURE'
