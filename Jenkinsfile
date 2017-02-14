@@ -90,12 +90,13 @@ node('JenkinsMarathonCI-Debian8') {
           }
         }
         stage("Parent Stage") {
-        stage("4. Assemble Runnable Binaries") {
+        parallel {
+          "4. Assemble Runnable Binaries": {
             echo "Skip"
             //sh "sudo -E sbt assembly"
             //sh "sudo bin/build-distribution"
-        }
-        stage("5. Build Docker Image") {
+          },
+          "5. Build Docker Image": {
             echo "Skip"
             // target is in .dockerignore so we just copy the jar before.
            // sh "cp target/*/marathon-assembly-*.jar ."
@@ -105,12 +106,13 @@ node('JenkinsMarathonCI-Debian8') {
            //         --build-arg MESOS_VERSION=${mesosVersion} \
            //         \$(pwd)
            //    """
-        }
-        stage("6. Archive Binaries") {
+          },
+          "6. Archive Binaries": {
             archiveArtifacts artifacts: 'target/**/classes/**', allowEmptyArchive: true
             archiveArtifacts artifacts: 'target/marathon-runnable.jar', allowEmptyArchive: true
+          }
         }
-        }
+      }
     } catch (Exception err) {
         currentBuild.result = 'FAILURE'
     } finally {
