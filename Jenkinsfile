@@ -88,7 +88,9 @@ node('JenkinsMarathonCI-Debian8') {
         }
         stage("4. Assemble and Archive Binaries") {
             sh "sudo -E sbt assembly"
+            sh "sudo bin/build-distribution"
             archiveArtifacts artifacts: 'target/**/classes/**', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'target/marathon-runnable.jar', allowEmptyArchive: true
         }
     } catch (Exception err) {
         currentBuild.result = 'FAILURE'
