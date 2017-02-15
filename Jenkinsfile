@@ -108,7 +108,7 @@ node('JenkinsMarathonCI-Debian8') {
                  """
             },
             "Create Debian and Red Hat Package": {
-                echo "Clone marathon-pkg" 
+              sh "git clone https://github.com/mesosphere/marathon-pkg.git marathon-pkg"
             },
             "Build Docker Image": {
               //target is in .dockerignore so we just copy the jar before.
