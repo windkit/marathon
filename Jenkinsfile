@@ -47,6 +47,7 @@ node('JenkinsMarathonCI-Debian8') {
             sh "sudo apt-get -y clean"
             sh """sudo apt-get install -y --force-yes --no-install-recommends \
                     curl \
+                    build-essential rpm \
                     ruby ruby-dev
                """
             sh "sudo gem install fpm"
