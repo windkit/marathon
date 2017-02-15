@@ -57,7 +57,8 @@ node('JenkinsMarathonCI-Debian8') {
         stageWithCommitStatus("1. Compile") {
           try {
             withEnv(['RUN_DOCKER_INTEGRATION_TESTS=true', 'RUN_MESOS_INTEGRATION_TESTS=true']) {
-              sh "sudo -E sbt -Dsbt.log.format=false clean compile scapegoat doc"
+              echo "Skip"
+              //sh "sudo -E sbt -Dsbt.log.format=false clean compile scapegoat doc"
             }
           } finally {
             archiveArtifacts artifacts: 'target/**/scapegoat-report/scapegoat.html', allowEmptyArchive: true
@@ -67,7 +68,8 @@ node('JenkinsMarathonCI-Debian8') {
           try {
               timeout(time: 20, unit: 'MINUTES') {
                 withEnv(['RUN_DOCKER_INTEGRATION_TESTS=true', 'RUN_MESOS_INTEGRATION_TESTS=true']) {
-                   sh "sudo -E sbt -Dsbt.log.format=false coverage test coverageReport"
+                   echo "Skip"
+                   //sh "sudo -E sbt -Dsbt.log.format=false coverage test coverageReport"
                 }
               }
           } finally {
@@ -79,7 +81,8 @@ node('JenkinsMarathonCI-Debian8') {
           try {
               timeout(time: 20, unit: 'MINUTES') {
                 withEnv(['RUN_DOCKER_INTEGRATION_TESTS=true', 'RUN_MESOS_INTEGRATION_TESTS=true']) {
-                   sh "sudo -E sbt -Dsbt.log.format=false coverage integration:test mesos-simulation/integration:test coverageReport"
+                   echo "Skip"
+                   //sh "sudo -E sbt -Dsbt.log.format=false coverage integration:test mesos-simulation/integration:test coverageReport"
                 }
             }
           } finally {
@@ -94,8 +97,7 @@ node('JenkinsMarathonCI-Debian8') {
           parallel (
             "Tar Binaries": {
               echo "Skip"
-              sh """tar -czv -f "target/ARTIFACT-todo.tgz" \
-                      --transform "s,,marathon-SBT_PROJECT_VERSION/," \
+              sh """sudo tar -czv -f "target/marathon-${gitCommit}.tgz" \
                       Dockerfile \
                       README.md \
                       LICENSE \
