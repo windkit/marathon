@@ -108,7 +108,7 @@ node('JenkinsMarathonCI-Debian8') {
                  """
             },
             "Create Debian and Red Hat Package": {
-              sh "git clone https://github.com/mesosphere/marathon-pkg.git marathon-pkg"
+              sh "rm -rf marathon-pkg && git clone https://github.com/mesosphere/marathon-pkg.git marathon-pkg"
               dir("marathon-pkg") {
               sh "rm -rf marathon && ln -s ../ marathon"
               sh "make all"
