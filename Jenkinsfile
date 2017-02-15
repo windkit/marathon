@@ -98,7 +98,6 @@ node('JenkinsMarathonCI-Debian8') {
         stage("5. Package Binaries") {
           parallel (
             "Tar Binaries": {
-              echo "Skip"
               sh """sudo tar -czv -f "target/marathon-${gitCommit}.tgz" \
                       Dockerfile \
                       README.md \
@@ -112,6 +111,8 @@ node('JenkinsMarathonCI-Debian8') {
             "Create Debian and Red Hat Package": {
               sh "sudo rm -rf marathon-pkg && git clone https://github.com/mesosphere/marathon-pkg.git marathon-pkg"
               dir("marathon-pkg") {
+                // marathon-pkg has marathon as a git module. We've already
+                // checked it out. So let's just symlink.
                 sh "sudo rm -rf marathon && ln -s ../ marathon"
                 sh "sudo make all"
               }
