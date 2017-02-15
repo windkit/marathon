@@ -109,7 +109,7 @@ node('JenkinsMarathonCI-Debian8') {
             },
             "Create Debian and Red Hat Package": {
               sh "git clone https://github.com/mesosphere/marathon-pkg.git marathon-pkg"
-              sh "cd marathon-pkg && ln -s ../ marathon"
+              sh "cd marathon-pkg && rm -rf marathon && ln -s ../ marathon"
               sh "make all"
             },
             "Build Docker Image": {
