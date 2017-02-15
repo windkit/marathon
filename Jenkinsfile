@@ -62,8 +62,7 @@ node('JenkinsMarathonCI-Debian8') {
         stageWithCommitStatus("1. Compile") {
           try {
             withEnv(['RUN_DOCKER_INTEGRATION_TESTS=true', 'RUN_MESOS_INTEGRATION_TESTS=true']) {
-              echo "Skip"
-              //sh "sudo -E sbt -Dsbt.log.format=false clean compile scapegoat doc"
+              sh "sudo -E sbt -Dsbt.log.format=false clean compile scapegoat doc"
             }
           } finally {
             archiveArtifacts artifacts: 'target/**/scapegoat-report/scapegoat.html', allowEmptyArchive: true
@@ -73,8 +72,7 @@ node('JenkinsMarathonCI-Debian8') {
           try {
               timeout(time: 20, unit: 'MINUTES') {
                 withEnv(['RUN_DOCKER_INTEGRATION_TESTS=true', 'RUN_MESOS_INTEGRATION_TESTS=true']) {
-                   echo "Skip"
-                   //sh "sudo -E sbt -Dsbt.log.format=false coverage test coverageReport"
+                   sh "sudo -E sbt -Dsbt.log.format=false coverage test coverageReport"
                 }
               }
           } finally {
@@ -86,8 +84,7 @@ node('JenkinsMarathonCI-Debian8') {
           try {
               timeout(time: 20, unit: 'MINUTES') {
                 withEnv(['RUN_DOCKER_INTEGRATION_TESTS=true', 'RUN_MESOS_INTEGRATION_TESTS=true']) {
-                   echo "Skip"
-                   //sh "sudo -E sbt -Dsbt.log.format=false coverage integration:test mesos-simulation/integration:test coverageReport"
+                   sh "sudo -E sbt -Dsbt.log.format=false coverage integration:test mesos-simulation/integration:test coverageReport"
                 }
             }
           } finally {
