@@ -45,7 +45,11 @@ node('JenkinsMarathonCI-Debian8') {
         }
         stage("Provision Jenkins Node") {
             sh "sudo apt-get -y clean"
-            sh "sudo apt-get install -y --force-yes --no-install-recommends curl"
+            sh """sudo apt-get install -y --force-yes --no-install-recommends \
+                    curl \
+                    ruby ruby-dev
+               """
+            sh "sudo gem install fpm"
             sh """if grep -q MesosDebian \$WORKSPACE/project/Dependencies.scala; then
         MESOS_VERSION=\$(sed -n 's/^.*MesosDebian = "\\(.*\\)"/\\1/p' <\$WORKSPACE/project/Dependencies.scala)
       else
