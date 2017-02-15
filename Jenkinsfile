@@ -135,6 +135,8 @@ node('JenkinsMarathonCI-Debian8') {
           archiveArtifacts artifacts: 'target/**/classes/**', allowEmptyArchive: true
           archiveArtifacts artifacts: 'target/marathon-runnable.jar', allowEmptyArchive: true
           archiveArtifacts artifacts: "target/marathon-${gitCommit}.tgz", allowEmptyArchive: true
+          archiveArtifacts artifacts: "marathon*.deb", allowEmptyArchive: true
+          archiveArtifacts artifacts: "marathon*.rpm", allowEmptyArchive: true
       }
     } catch (Exception err) {
         currentBuild.result = 'FAILURE'
