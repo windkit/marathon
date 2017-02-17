@@ -14,27 +14,6 @@ def pandas_frame_from(result):
     fields = d.pop("fields").apply(pandas.Series)
     return pandas.concat([d, fields], axis=1)
 
-def query_open_reviews():
-    params = {'queryKey':'active', 'order':'newest',
-        'api.token':os.getenv('CONDUIT_TOKEN')}
-    result = requests.get("{}/differential.revision.search".format(ENDPOINT), params).json()
-
-    data_frame = pandas_frame_from(result)
-    data_frame.pop('attachments')
-    data_frame.pop('policy')
-    data_frame.pop('type')
-    data_frame.pop('jira.issues')
-
-    # Convert dates and calculate age
-    dates = data_frame[['dateCreated', 'dateModified']].applymap(lambda d:
-        datetime.fromtimestamp(d))
-    data_frame = data_frame.join(dates, rsuffix='.converted').assign(
-        age = lambda x: datetime.now() - x['dateCreated.converted'])
-
-
-    age_stats = data_frame[['age']].describe(percentiles=[.25, .5, .75, .9])
-    print(age_stats)
-
 
 def life_time(data_frame):
     """
@@ -88,6 +67,28 @@ def data_between(data_frame, start, end=datetime.now()):
     """
     return data_frame.loc[(data_frame['dateCreated'] >= start) &
         (data_frame['dateCreated'] < end)]
+
+
+def query_open_reviews():
+    params = {'queryKey':'active', 'order':'newest',
+        'api.token':os.getenv('CONDUIT_TOKEN')}
+    result = requests.get("{}/differential.revision.search".format(ENDPOINT), params).json()
+
+    data_frame = pandas_frame_from(result)
+    data_frame.pop('attachments')
+    data_frame.pop('policy')
+    data_frame.pop('type')
+    data_frame.pop('jira.issues')
+
+    # Convert dates and calculate age
+    dates = data_frame[['dateCreated', 'dateModified']].applymap(lambda d:
+        datetime.fromtimestamp(d))
+    data_frame = data_frame.join(dates, rsuffix='.converted').assign(
+        age = lambda x: datetime.now() - x['dateCreated.converted'])
+
+
+    age_stats = data_frame[['age']].describe(percentiles=[.25, .5, .75, .9])
+    print(age_stats)
 
 
 def query_closed_reviews():
