@@ -42,7 +42,9 @@ def test_incremental_scale():
       "cmd": "for (( ; ; )); do sleep 100000000; done",
       "cpus": 0.001,
       "mem": 8,
-      "disk": 0
+      "disk": 0,
+      "backoffFactor": 1.0,
+      "backoffSeconds": 0,
     }
 
     with marathon_on_marathon():
