@@ -106,6 +106,12 @@ lazy val commonSettings = inConfig(SerialIntegrationTest)(Defaults.testTasks) ++
     "Mesosphere Public Repo" at "https://downloads.mesosphere.com/maven"
   ),
   cancelable in Global := true,
+
+  packageOptions in (Compile, packageBin) ++= Seq(
+    Package.ManifestAttributes( "Scala-Version" -> scalaVersion.value ),
+    Package.ManifestAttributes( "Git-Commit" -> git.gitHeadCommit.value.getOrElse("unknown") )
+  ),
+
   releaseProcess := Seq[ReleaseStep](
     checkSnapshotDependencies,
     inquireVersions,
