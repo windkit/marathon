@@ -2,6 +2,7 @@ package mesosphere.marathon.core.instance.update
 
 import mesosphere.marathon.core.event.MarathonEvent
 import mesosphere.marathon.core.instance.Instance
+import mesosphere.marathon.core.task.termination.KillReason
 
 import scala.collection.immutable.Seq
 
@@ -28,4 +29,6 @@ object InstanceUpdateEffect {
   object Failure {
     def apply(message: String): Failure = new Failure(new RuntimeException(message))
   }
+
+  case class Kill(reason: KillReason) extends InstanceUpdateEffect
 }

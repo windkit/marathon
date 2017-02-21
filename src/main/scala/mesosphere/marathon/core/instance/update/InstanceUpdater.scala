@@ -37,6 +37,9 @@ object InstanceUpdater extends StrictLogging {
     instance.tasksMap.get(taskId).map { task =>
       val taskEffect = task.update(TaskUpdateOperation.MesosUpdate(op.condition, op.mesosStatus, now))
       taskEffect match {
+        case TaskUpdateEffect.Kill(reason) =>
+          InstanceUpdateEffect.Kill(reason)
+
         case TaskUpdateEffect.Update(updatedTask) =>
           val updated: Instance = updatedInstance(instance, updatedTask, now)
           val events = eventsGenerator.events(updated, Some(updatedTask), now, previousCondition = Some(instance.state.condition))
@@ -134,5 +137,48 @@ object InstanceUpdater extends StrictLogging {
 
   private[marathon] def revert(instance: Instance): InstanceUpdateEffect = {
     InstanceUpdateEffect.Update(instance, oldState = None, events = Nil)
+  }
+
+  //TODO(pods): this only supports apps (single-container instances)
+  private[marathon] def forceSuspend(instance: Instance, now: Timestamp): InstanceUpdateEffect = {
+    val reservedTask: Option[Task.Reserved] =
+      instance.tasksMap.values.collectFirst {
+        case t: Task.Reserved =>
+          t
+        case t: Task.LaunchedOnReservation =>
+          Task.Reserved(
+            taskId = t.taskId,
+            runSpecVersion = t.runSpecVersion,
+            reservation = t.reservation,
+            status =
+              Task.Status(
+                stagedAt = now,
+                startedAt = None,
+                mesosStatus = None,
+                condition = Condition.Reserved,
+                networkInfo = t.status.networkInfo))
+      }
+
+    if (!instance.hasReservation) {
+      InstanceUpdateEffect.Failure("Only reserved instances can be force suspended")
+    } else if (reservedTask.isEmpty) {
+      InstanceUpdateEffect.Failure(s"No reserved tasks for ${instance.instanceId}")
+    } else if (reservedTask == instance.tasksMap.values.headOption) {
+      InstanceUpdateEffect.Noop(instance.instanceId)
+    } else {
+      val updated = instance.copy(
+        tasksMap = reservedTask.map { t => t.taskId -> t }.toMap,
+        agentInfo = instance.agentInfo.copy(agentId = None),
+        state = Instance.InstanceState(
+          condition = Condition.Reserved,
+          since = now,
+          activeSince = None,
+          healthy = None))
+
+      val events = eventsGenerator.events(
+        updated, task = reservedTask, now, previousCondition = Some(instance.state.condition))
+
+      InstanceUpdateEffect.Update(updated, oldState = Some(instance), events)
+    }
   }
 }

@@ -12,6 +12,7 @@ import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.core.task.{ Task, TaskCondition }
 import mesosphere.marathon.state.{ PathId, Timestamp }
 import org.apache.mesos
+import org.scalatest.Inside
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
@@ -21,7 +22,7 @@ import scala.concurrent.Future
   *
   * More tests are in [[mesosphere.marathon.tasks.InstanceTrackerImplTest]]
   */
-class InstanceUpdateOpResolverTest extends UnitTest {
+class InstanceUpdateOpResolverTest extends UnitTest with Inside {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -218,11 +219,11 @@ class InstanceUpdateOpResolverTest extends UnitTest {
     }
 
     "Processing a Reserve for an existing instanceId" in new Fixture {
-      instanceTracker.instance(existingReservedInstance.instanceId) returns Future.successful(Some(existingReservedInstance))
-      val stateChange = updateOpResolver.resolve(InstanceUpdateOperation.Reserve(existingReservedInstance)).futureValue
+      instanceTracker.instance(reservedInstance.instanceId) returns Future.successful(Some(reservedInstance))
+      val stateChange = updateOpResolver.resolve(InstanceUpdateOperation.Reserve(reservedInstance)).futureValue
 
       When("call taskTracker.task")
-      verify(instanceTracker).instance(existingReservedInstance.instanceId)
+      verify(instanceTracker).instance(reservedInstance.instanceId)
 
       Then("result in a Failure")
       stateChange shouldBe a[InstanceUpdateEffect.Failure]
@@ -230,11 +231,42 @@ class InstanceUpdateOpResolverTest extends UnitTest {
       verifyNoMoreInteractions()
     }
 
+    "result in failure when processing a ForceSuspended for a non-reserved task" in new Fixture {
+      instanceTracker.instance(existingInstance.instanceId) returns Future.successful(Some(existingInstance))
+      updateOpResolver.
+        resolve(InstanceUpdateOperation.ForceSuspended(existingInstance)).
+        futureValue.
+        shouldBe(a[InstanceUpdateEffect.Failure])
+    }
+
+    "result in Noop when processing a ForceSuspended for a Reserved (not-launched) task" in new Fixture {
+      instanceTracker.instance(reservedInstance.instanceId) returns Future.successful(Some(reservedInstance))
+      updateOpResolver.
+        resolve(InstanceUpdateOperation.ForceSuspended(reservedInstance)).
+        futureValue.
+        shouldBe(a[InstanceUpdateEffect.Noop])
+    }
+
+    "result in Suspend update when processing a ForceSuspended for a Reserved, launched task" in new Fixture {
+      instanceTracker.instance(reservedLaunchedInstance.instanceId) returns Future.successful(Some(reservedLaunchedInstance))
+      val result = updateOpResolver.
+        resolve(InstanceUpdateOperation.ForceSuspended(reservedLaunchedInstance)).
+        futureValue
+
+      inside(result) {
+        case update: InstanceUpdateEffect.Update =>
+          update.instance.state.condition.shouldBe(Condition.Reserved)
+          update.instance.tasksMap.values.head.shouldBe(a[Task.Reserved])
+          update.oldState.shouldBe(Some(reservedLaunchedInstance))
+          update.events.head.eventType.shouldBe("status_update_event")
+      }
+    }
+
     "Revert" in new Fixture {
-      val stateChange = updateOpResolver.resolve(InstanceUpdateOperation.Revert(existingReservedInstance)).futureValue
+      val stateChange = updateOpResolver.resolve(InstanceUpdateOperation.Revert(reservedInstance)).futureValue
 
       When("result in an Update")
-      stateChange shouldEqual InstanceUpdateEffect.Update(existingReservedInstance, None, events = Nil)
+      stateChange shouldEqual InstanceUpdateEffect.Update(reservedInstance, None, events = Nil)
 
       Then("not query the taskTracker all")
       verifyNoMoreInteractions()
@@ -384,14 +416,17 @@ class InstanceUpdateOpResolverTest extends UnitTest {
     val instanceTracker = mock[InstanceTracker]
     val updateOpResolver = new InstanceUpdateOpResolver(instanceTracker, clock)
 
-    val appId = PathId("/app")
-    val existingInstance: Instance = TestInstanceBuilder.newBuilder(appId).addTaskRunning().getInstance()
-    val existingTask: Task.LaunchedEphemeral = existingInstance.appTask
+    lazy val appId = PathId("/app")
+    lazy val existingInstance: Instance = TestInstanceBuilder.newBuilder(appId).addTaskRunning().getInstance()
+    lazy val existingTask: Task.LaunchedEphemeral = existingInstance.appTask
 
-    val existingReservedInstance = TestInstanceBuilder.newBuilder(appId).addTaskReserved().getInstance()
-    val existingReservedTask: Task.Reserved = existingReservedInstance.appTask
-    val notExistingInstanceId = Instance.Id.forRunSpec(appId)
-    val unreachableInstance = TestInstanceBuilder.newBuilder(appId).addTaskUnreachable().getInstance()
+    lazy val reservedInstance = TestInstanceBuilder.newBuilder(appId).addTaskReserved().getInstance()
+    lazy val existingReservedTask: Task.Reserved = reservedInstance.appTask
+
+    lazy val reservedLaunchedInstance: Instance = TestInstanceBuilder.newBuilder(appId).addTaskResidentLaunched().getInstance()
+
+    lazy val notExistingInstanceId = Instance.Id.forRunSpec(appId)
+    lazy val unreachableInstance = TestInstanceBuilder.newBuilder(appId).addTaskUnreachable().getInstance()
 
     def verifyNoMoreInteractions(): Unit = {
       noMoreInteractions(instanceTracker)

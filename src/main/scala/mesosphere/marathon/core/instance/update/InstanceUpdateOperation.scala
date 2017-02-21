@@ -36,6 +36,12 @@ object InstanceUpdateOperation {
     override def possibleNewState: Option[Instance] = Some(instance)
   }
 
+  /** Force a reserved task back into reserved state. This is how we kill an unreachable resident task */
+  case class ForceSuspended(instance: Instance) extends InstanceUpdateOperation {
+    override def instanceId: Instance.Id = instance.instanceId
+    override def possibleNewState: Option[Instance] = Some(instance)
+  }
+
   case class LaunchOnReservation(
     instanceId: Instance.Id,
     runSpecVersion: Timestamp,

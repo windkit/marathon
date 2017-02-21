@@ -1,6 +1,7 @@
 package mesosphere.marathon.core.task.update
 
 import mesosphere.marathon.core.task.Task
+import mesosphere.marathon.core.task.termination.KillReason
 
 /**
   * Enumeration defining the effect that an applied Mesos status update has to a task.
@@ -15,4 +16,6 @@ object TaskUpdateEffect {
   object Failure {
     def apply(message: String): Failure = Failure(new RuntimeException(message))
   }
+
+  case class Kill(reason: KillReason) extends TaskUpdateEffect
 }

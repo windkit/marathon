@@ -35,4 +35,7 @@ object KillReason {
 
   /** The task is killed because it exceeded the maximum number of consecutive failures */
   case object FailedHealthChecks extends KillReason
+
+  /** The task was commanded to be killed while it was unreachable */
+  case object KilledWhileUnreachable extends KillReason
 }

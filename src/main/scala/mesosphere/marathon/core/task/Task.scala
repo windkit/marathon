@@ -10,6 +10,7 @@ import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.pod.MesosContainer
 import mesosphere.marathon.core.task.Task.Reservation.Timeout.Reason.{ RelaunchEscalationTimeout, ReservationTimeout }
 import mesosphere.marathon.core.task.state.NetworkInfo
+import mesosphere.marathon.core.task.termination.KillReason
 import mesosphere.marathon.core.task.update.{ TaskUpdateEffect, TaskUpdateOperation }
 import mesosphere.marathon.state._
 import org.apache.mesos
@@ -434,7 +435,12 @@ object Task {
         TaskUpdateEffect.Update(updatedTask)
 
       case update: TaskUpdateOperation.MesosUpdate =>
-        TaskUpdateEffect.Failure("Mesos task status updates cannot be applied to reserved tasks")
+        if (update.condition.isActive)
+          TaskUpdateEffect.Kill(KillReason.KilledWhileUnreachable)
+        else if (update.condition.isLost)
+          TaskUpdateEffect.Noop
+        else
+          TaskUpdateEffect.Failure("Mesos task status updates cannot be applied to reserved tasks")
     }
   }
 

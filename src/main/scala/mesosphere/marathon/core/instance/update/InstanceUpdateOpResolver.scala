@@ -42,6 +42,9 @@ private[marathon] class InstanceUpdateOpResolver(
       case op: ReservationTimeout =>
         updateExistingInstance(op.instanceId)(updater.reservationTimeout(_, clock.now()))
 
+      case op: ForceSuspended =>
+        updateExistingInstance(op.instanceId)(updater.forceSuspend(_, clock.now()))
+
       case op: Reserve =>
         createInstance(op.instanceId)(updater.reserve(op, clock.now()))
 
