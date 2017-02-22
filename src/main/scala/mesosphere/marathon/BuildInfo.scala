@@ -15,24 +15,21 @@ case object BuildInfo {
 
   lazy val attributes: Option[Attributes] = manifest.map(_.getMainAttributes())
 
-  def getAttribute(name: String): String = attributes.map { attrs =>
+  def getAttribute(name: String): Option[String] = attributes.flatMap { attrs =>
     try {
-      attrs.getValue(name) match {
-        case null => "unknown"
-        case v => v
-      }
+      Option(attrs.getValue(name))
     } catch {
-      case NonFatal(_) => "unknown"
+      case NonFatal(_) => None
     }
-  }.getOrElse("unknown")
+  }
 
-  lazy val name: String = getAttribute("Implementation-Title")
+  lazy val name: String = getAttribute("Implementation-Title").getOrElse("unknown")
 
-  lazy val version: String = getAttribute("Implementation-Version")
+  lazy val version: String = getAttribute("Implementation-Version").getOrElse("1.5.0-SNAPSHOT")
 
-  lazy val scalaVersion: String = getAttribute("Scala-Version")
+  lazy val scalaVersion: String = getAttribute("Scala-Version").getOrElse("2.x.x")
 
-  lazy val buildref: String = getAttribute("Git-Commit")
+  lazy val buildref: String = getAttribute("Git-Commit").getOrElse("unknown")
 
   override val toString: String = {
     "name: %s, version: %s, scalaVersion: %s, buildref: %s" format (
