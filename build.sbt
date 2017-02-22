@@ -247,16 +247,8 @@ lazy val marathon = (project in file("."))
   .settings(teamCitySetEnvSettings: _*)
   .settings(asmSettings: _*)
   .settings(
-    //name := "marathon",
     unmanagedResourceDirectories in Compile += file("docs/docs/rest-api"),
     libraryDependencies ++= Dependencies.marathon,
-   // buildInfoKeys := Seq(
-   //   name, version, scalaVersion,
-   //   BuildInfoKey.action("buildref") {
-   //     git.gitHeadCommit.value.getOrElse("unknown")
-   //   }
-   // ),
-    //buildInfoPackage := "mesosphere.marathon",
     sourceGenerators in Compile += (ramlGenerate in Compile).taskValue,
     scapegoatIgnoredFiles ++= Seq(s"${sourceManaged.value.getPath}/.*")
   )
