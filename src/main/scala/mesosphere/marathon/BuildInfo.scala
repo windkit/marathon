@@ -9,7 +9,7 @@ case object BuildInfo {
 
   lazy val manifest: Option[Manifest] = Try {
     val mf = new Manifest()
-    mf.read(Thread.currentThread().getContextClassLoader().getResourceAsStream("META-INF/MANIFEST.MF"))
+    mf.read(getClass().getClassLoader().getResourceAsStream("META-INF/MANIFEST.MF"))
     mf
   }.toOption
 
