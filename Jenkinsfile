@@ -44,6 +44,7 @@ node('JenkinsMarathonCI-Debian8') {
             currentBuild.displayName = "#${env.BUILD_NUMBER}: ${shortCommit}"
         }
         stage("Provision Jenkins Node") {
+            sh "whoami"
             sh "sudo apt-get -y clean"
             sh """sudo apt-get install -y --force-yes --no-install-recommends \
                     curl \
