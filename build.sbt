@@ -108,6 +108,7 @@ lazy val commonSettings = inConfig(SerialIntegrationTest)(Defaults.testTasks) ++
   cancelable in Global := true,
 
   packageOptions in (Compile, packageBin) ++= Seq(
+    Package.ManifestAttributes( "Implementation-Version" -> version.value ),
     Package.ManifestAttributes( "Scala-Version" -> scalaVersion.value ),
     Package.ManifestAttributes( "Git-Commit" -> git.gitHeadCommit.value.getOrElse("unknown") )
   ),
