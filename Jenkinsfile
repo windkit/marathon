@@ -129,7 +129,7 @@ node('JenkinsMarathonCI-Debian8') {
               //target is in .dockerignore so we just copy the jar before.
               sh "cp target/*/marathon-assembly-*.jar ."
               mesosVersion = sh(returnStdout: true, script: "sed -n 's/^.*MesosDebian = \"\\(.*\\)\"/\\1/p' <./project/Dependencies.scala").trim()
-              docker.build("mesosphere/marathon:${gitCommit}", "--build-arg MESOS_VERSION=${mesosVersion}")
+              docker.build("mesosphere/marathon:${gitCommit}", "--build-arg MESOS_VERSION=${mesosVersion} ${pwd}")
            }
         )
       }
