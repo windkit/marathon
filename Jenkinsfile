@@ -44,7 +44,7 @@ node('JenkinsMarathonCI-Debian8') {
             currentBuild.displayName = "#${env.BUILD_NUMBER}: ${shortCommit}"
         }
         stage("Provision Jenkins Node") {
-            sh "ls -lah $(pwd)"
+            sh "ls -lah \$(pwd)"
             sh """
                 sudo gpasswd -a ${USER} docker && \
                 sudo service docker restart && \
