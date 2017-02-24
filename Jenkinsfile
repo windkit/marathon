@@ -126,7 +126,7 @@ node('JenkinsMarathonCI-Debian8-1-2017-02-23') { try {
           archiveArtifacts artifacts: "marathon-pkg/marathon*.rpm", allowEmptyArchive: false
       }
       // Only create latest-dev snapshot for master.
-      if( env.BRANCH_NAME == "pipelines/karsten/push-docker-snapshot" ) {
+      if( env.BRANCH_NAME == "master" ) {
         stage("7. Publish Docker Image Snaphot") {
           docker.image("mesosphere/marathon:${gitCommit}").tag("latest-dev")
           docker.withRegistry("https://index.docker.io/v1/", "docker-hub-credentials") {
