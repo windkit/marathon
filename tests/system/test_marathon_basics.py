@@ -449,34 +449,69 @@ def test_scale_app_in_group_then_group():
         assert len(tasks2) == 2
 
 
-def test_health_check_healthy():
-    """ Tests health checks of an app launched by marathon.
+def test_http_health_check_healthy():
+    """ Tests health checks of an app launched by marathon. Since current universe
+        marathon version does not support `MESOS_*` health check protocols we test
+        on the root marathon.
     """
-    with marathon_on_marathon():
-        client = marathon.create_client()
-        app_def = python_http_app()
-        app_def['id'] = 'no-health'
-        client.add_app(app_def)
-        deployment_wait()
+    # TODO(AD): Reenable after marathon 1.4.x is in the universe (which should fairly soon)
+    #with marathon_on_marathon():
+    client = marathon.create_client()
+    app_def = python_http_app()
+    app_def['id'] = 'no-health'
+    client.add_app(app_def)
+    deployment_wait()
 
-        app = client.get_app('/no-health')
+    app = client.get_app('/no-health')
 
-        assert app['tasksRunning'] == 1
-        assert app['tasksHealthy'] == 0
+    assert app['tasksRunning'] == 1
+    assert app['tasksHealthy'] == 0
 
-        client.remove_app('/no-health')
-        health_list = []
-        health_list.append(health_check())
-        app_def['id'] = 'healthy'
-        app_def['healthChecks'] = health_list
+    client.remove_app('/no-health')
 
-        client.add_app(app_def)
-        deployment_wait()
+    # Test HTTP, MESOS_HTTP, TCP and MESOS_TCP with standard python server
+    protocols = ['HTTP', 'MESOS_HTTP', 'TCP', 'MESOS_TCP']
+    for protocol in protocols:
+        ensure_app_healthy(client, app_def, health_check(protocol=protocol))
 
-        app = client.get_app('/healthy')
 
-        assert app['tasksRunning'] == 1
-        assert app['tasksHealthy'] == 1
+def ensure_app_healthy(client, app_def, health_check):
+    app_def['id'] = '/healthy'
+    app_def['healthChecks'] = [health_check]
+
+    print('Testing {} health check protocol.'.format(health_check['protocol']))
+    client.add_app(app_def)
+    deployment_wait()
+
+    app = client.get_app('/healthy')
+
+    assert app['tasksRunning'] == 1
+    assert app['tasksHealthy'] == 1
+    client.remove_app('/healthy')
+    deployment_wait()
+
+
+def test_command_health_check_healthy():
+    # Test COMMAND protocol
+    # TODO(AD): Reenable after marathon 1.4.x is in the universe (which should fairly soon)
+    #with marathon_on_marathon():
+    client = marathon.create_client()
+    app_def = app()
+
+    ensure_app_healthy(client, app_def, command_health_check())
+
+
+def test_https_health_check_healthy():
+    # Test HTTPS and MESOS_HTTPS protocols with a prepared nginx image that enables
+    # SSL (using self-signed certificate) and listens on 443
+    # TODO(AD): Reenable after marathon 1.4.x is in the universe (which should fairly soon)
+    #with marathon_on_marathon():
+    client = marathon.create_client()
+    app_def = nginx_with_ssl_support()
+
+    protocols = ['MESOS_HTTPS', 'HTTPS']
+    for protocol in protocols:
+        ensure_app_healthy(client, app_def, health_check(protocol=protocol, port_index=1)) 
 
 
 def test_health_check_unhealthy():
@@ -487,7 +522,7 @@ def test_health_check_unhealthy():
         client = marathon.create_client()
         app_def = python_http_app()
         health_list = []
-        health_list.append(health_check('/bad-url', 0, 0))
+        health_list.append(health_check('/bad-url', failures=0, timeout=0))
         app_def['id'] = 'unhealthy'
         app_def['healthChecks'] = health_list
 
