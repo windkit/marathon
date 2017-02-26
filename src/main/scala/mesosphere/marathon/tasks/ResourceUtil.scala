@@ -191,7 +191,13 @@ object ResourceUtil {
     }
 
     resource.getType match {
-      case MesosProtos.Value.Type.SCALAR => s"$resourceName ${resource.getScalar.getValue}"
+      case MesosProtos.Value.Type.SCALAR =>
+        s"$resourceName ${resource.getScalar.getValue}${
+          if (resource.hasRevocable)
+            "{REV}"
+          else
+            ""
+        }"
       case MesosProtos.Value.Type.RANGES =>
         s"$resourceName ${
           val ranges = resource.getRanges.getRangeList.to[Seq]

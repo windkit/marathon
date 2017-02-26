@@ -105,6 +105,8 @@ case class AppDefinition(
 
   override val diskForPersistentVolumes: Double = persistentVolumes.map(_.persistent.size).sum.toDouble
 
+  override val revocable: Boolean = labels.isDefinedAt("priority")
+
   def toProto: Protos.ServiceDefinition = {
     val commandInfo = TaskBuilder.commandInfo(
       runSpec = this,
@@ -113,8 +115,8 @@ case class AppDefinition(
       hostPorts = Seq.empty,
       envPrefix = None
     )
-    val cpusResource = ScalarResource(Resource.CPUS, resources.cpus)
-    val memResource = ScalarResource(Resource.MEM, resources.mem)
+    val cpusResource = ScalarResource(Resource.CPUS, resources.cpus, "*", revocable)
+    val memResource = ScalarResource(Resource.MEM, resources.mem, "*", revocable)
     val diskResource = ScalarResource(Resource.DISK, resources.disk)
     val gpusResource = ScalarResource(Resource.GPUS, resources.gpus.toDouble)
     val appLabels = labels.map {
@@ -466,6 +468,8 @@ object AppDefinition extends GeneralPurposeCombinators {
   val DefaultUpgradeStrategy: UpgradeStrategy = UpgradeStrategy.empty
 
   val DefaultSecrets = Map.empty[String, Secret]
+
+  val DefaultRevocable = false
 
   val DefaultUnreachableStrategy = UnreachableStrategy.defaultEphemeral
 

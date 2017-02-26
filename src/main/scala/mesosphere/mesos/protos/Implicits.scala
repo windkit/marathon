@@ -80,13 +80,16 @@ object Implicits {
           .setRanges(rangesProto)
           .setRole(role)
           .build
-      case ScalarResource(name, value, role) =>
-        Protos.Resource.newBuilder
+      case ScalarResource(name, value, role, revocable) =>
+        val builder = Protos.Resource.newBuilder
           .setType(Protos.Value.Type.SCALAR)
           .setName(name)
           .setScalar(Protos.Value.Scalar.newBuilder.setValue(value))
           .setRole(role)
-          .build
+        if (revocable) {
+          builder.setRevocable(Protos.Resource.RevocableInfo.getDefaultInstance())
+        }
+        builder.build
       case SetResource(name, items, role) =>
         val set = Protos.Value.Set.newBuilder
           .addAllItem(items)
@@ -114,7 +117,8 @@ object Implicits {
         ScalarResource(
           resource.getName,
           resource.getScalar.getValue,
-          resource.getRole
+          resource.getRole,
+          resource.hasRevocable
         )
       case Protos.Value.Type.SET =>
         SetResource(

@@ -82,6 +82,10 @@ object MarathonSchedulerDriver {
     frameworkInfoBuilder.addCapabilities(Capability.newBuilder().setType(Capability.Type.PARTITION_AWARE))
     log.info("PARTITION_AWARE feature enabled.")
 
+    // Added Revocable Resources Feature
+    frameworkInfoBuilder.addCapabilities(Capability.newBuilder().setType(Capability.Type.REVOCABLE_RESOURCES))
+    log.info("REVOCABLE_RESOURCES feature enabled.")
+
     val frameworkInfo = frameworkInfoBuilder.build()
 
     log.debug("Start creating new driver")

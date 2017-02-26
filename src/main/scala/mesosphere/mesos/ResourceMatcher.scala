@@ -53,13 +53,15 @@ object ResourceMatcher {
       needToReserve: Boolean,
       labelMatcher: LabelMatcher) {
 
-    def apply(resource: Protos.Resource): Boolean = {
+    def apply(resource: Protos.Resource, revocable: Boolean = false): Boolean = {
       import ResourceSelector._
       // resources with disks are matched by the VolumeMatcher or not at all
       val noAssociatedVolume = !(resource.hasDisk && resource.getDisk.hasVolume)
       def matchesLabels: Boolean = labelMatcher.matches(reservationLabels(resource))
+      val matchesRevocable: Boolean = resource.hasRevocable == revocable
 
-      noAssociatedVolume && acceptedRoles(resource.getRole) && matchesLabels
+      noAssociatedVolume && acceptedRoles(resource.getRole) && matchesLabels &&
+        matchesRevocable
     }
 
     override def toString: String = {
@@ -82,16 +84,19 @@ object ResourceMatcher {
 
     /** Match resources with given roles that have at least the given labels */
     def reservedWithLabels(acceptedRoles: Set[String], labels: Map[String, String]): ResourceSelector = {
-      ResourceSelector(acceptedRoles, needToReserve = false, LabelMatcher.WithReservationLabels(labels))
+      ResourceSelector(acceptedRoles, needToReserve = false,
+        LabelMatcher.WithReservationLabels(labels))
     }
     /** Match resources with given roles that do not have known reservation labels */
     def reservable: ResourceSelector = {
-      ResourceSelector(Set(ResourceRole.Unreserved), needToReserve = true, LabelMatcher.WithoutReservationLabels)
+      ResourceSelector(Set(ResourceRole.Unreserved), needToReserve = true,
+        LabelMatcher.WithoutReservationLabels)
     }
 
     /** Match any resources with given roles that do not have known reservation labels */
     def any(acceptedRoles: Set[String]): ResourceSelector = {
-      ResourceSelector(acceptedRoles, needToReserve = false, LabelMatcher.WithoutReservationLabels)
+      ResourceSelector(acceptedRoles, needToReserve = false,
+        LabelMatcher.WithoutReservationLabels)
     }
   }
 
@@ -152,9 +157,9 @@ object ResourceMatcher {
 
     val scalarMatchResults = (
       Seq(
-        scalarResourceMatch(Resource.CPUS, runSpec.resources.cpus, ScalarMatchResult.Scope.NoneDisk),
-        scalarResourceMatch(Resource.MEM, runSpec.resources.mem, ScalarMatchResult.Scope.NoneDisk),
-        scalarResourceMatch(Resource.GPUS, runSpec.resources.gpus.toDouble, ScalarMatchResult.Scope.NoneDisk)) ++
+        scalarResourceMatch(Resource.CPUS, runSpec.resources.cpus, runSpec.revocable, ScalarMatchResult.Scope.NoneDisk),
+        scalarResourceMatch(Resource.MEM, runSpec.resources.mem, runSpec.revocable, ScalarMatchResult.Scope.NoneDisk),
+        scalarResourceMatch(Resource.GPUS, runSpec.resources.gpus.toDouble, runSpec.revocable, ScalarMatchResult.Scope.NoneDisk)) ++
         diskMatch
     ).filter(_.requiredValue != 0)
 
@@ -407,12 +412,14 @@ object ResourceMatcher {
   private[this] def matchScalarResource(
     groupedResources: Map[Role, Seq[Protos.Resource]], selector: ResourceSelector)(
     name: String, requiredValue: Double,
+    revocable: Boolean = false,
     scope: ScalarMatchResult.Scope = ScalarMatchResult.Scope.NoneDisk): ScalarMatchResult = {
 
     require(scope == ScalarMatchResult.Scope.NoneDisk || name == Resource.DISK)
 
     val resourcesForName = groupedResources.getOrElse(name, Seq.empty)
-    val matchingScalarResources = resourcesForName.filter(selector(_))
+    val matchingScalarResources = resourcesForName.filter(selector(_, revocable))
+    log.debug(s"MatchingScalarResources $matchingScalarResources")
     consumeResources(requiredValue, matchingScalarResources.toList) match {
       case Left(valueLeft) =>
         NoMatch(name, requiredValue, requiredValue - valueLeft, scope = scope)
@@ -452,7 +459,7 @@ object ResourceMatcher {
             val decrementedResource = nextResource.afterAllocation(consume)
             val newValueLeft = valueLeft - consume
             val reservation = if (nextResource.hasReservation) Option(nextResource.getReservation) else None
-            val consumedValue = GeneralScalarMatch.Consumption(consume, nextResource.getRole, reservation)
+            val consumedValue = GeneralScalarMatch.Consumption(consume, nextResource.getRole, reservation, nextResource.hasRevocable)
 
             consumeResources(newValueLeft, restResources, (decrementedResource ++ resourcesNotConsumed).toList,
               consumedValue :: resourcesConsumed, matcher)

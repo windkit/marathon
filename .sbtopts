@@ -1,5 +1,3 @@
--mem 8192
--J-XX:MaxMetaspaceSize=512m
 -J-XX:+UseConcMarkSweepGC
 -J-XX:+CMSClassUnloadingEnabled
 -J-server

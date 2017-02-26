@@ -71,9 +71,9 @@ case class GeneralScalarMatch(
 
   def consumedResources: Seq[Protos.Resource] = {
     consumed.map {
-      case GeneralScalarMatch.Consumption(value, role, reservation) =>
+      case GeneralScalarMatch.Consumption(value, role, reservation, revocable) =>
         import mesosphere.mesos.protos.Implicits._
-        val builder = ScalarResource(resourceName, value, role).toBuilder
+        val builder = ScalarResource(resourceName, value, role, revocable).toBuilder
         reservation.foreach(builder.setReservation)
         builder.build()
     }
@@ -91,7 +91,7 @@ case class GeneralScalarMatch(
 object GeneralScalarMatch {
   /** A (potentially partial) consumption of a scalar resource. */
   case class Consumption(consumedValue: Double, role: String,
-    reservation: Option[ReservationInfo]) extends ScalarMatchResult.Consumption
+    reservation: Option[ReservationInfo], revocable: Boolean = false) extends ScalarMatchResult.Consumption
 }
 
 case class DiskResourceMatch(
